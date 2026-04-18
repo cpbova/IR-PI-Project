@@ -1,0 +1,62 @@
+import RPi.GPIO as GPIO
+from datetime import datetime
+import evdev
+from evdev import InputDevice, categorize, ecodes
+import pygame
+
+# Initialize audio
+pygame.mixer.init()
+
+# Map IR hex codes to WAV files
+IR_MAP = {"0x300ffa25d":"1",
+          "0x300ff629d":"2",
+          "0x300ffe21d":"3",
+          "0x300ff22dd":"4",
+          "0x300ff02fd":"5",
+          "0x300ffc23d":"6",
+          "0x300ffe01f":"7",
+          "0x300ffa857":"8",
+          "0x300ff906f":"9",
+          "0x300ff6897":"ast",
+          "0x300ff9867":"0",
+          "0x300ffb04f":"hash",
+          "0x300ff18e7":"up",
+          "0x300ff10ef":"left",
+          "0x300ff38c7":"ok",
+          "0x300ff5aa5":"right",
+          "0x300ff4ab5]":"down"}
+
+# Replace with your actual device path
+
+pin=11
+
+# Sets up GPIO
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(pin, GPIO.IN)
+
+device_path = GPIO.input(pin)
+
+dev = InputDevice(device_path)
+
+print(f"Listening for IR signals on {dev.path}...")
+
+def play_sound(file):
+    try:
+        pygame.mixer.music.load(file)
+        pygame.mixer.music.play()
+        print(f"Playing {file}")
+    except Exception as e:
+        print(f"Error playing sound: {e}")
+
+for event in dev.read_loop():
+    if event.type == ecodes.EV_KEY:
+        key_event = categorize(event)
+
+        if key_event.keystate == key_event.key_down:
+            code = hex(key_event.scancode)
+            print(f"Received IR code: {code}")
+
+            if code in IR_MAP:
+                play_sound(IR_MAP[code])
+            else:
+                print("No mapping for this code")
